@@ -11,6 +11,12 @@ window.billConfig = {
         pdfSignatureRight: 'For, Jay Bhavani Furniture'
     },
     defaults: {
+        documentType: 'Invoice',
+        documentNumberPrefix: { Invoice: 'INV', Quotation: 'QOT' },
+        documentNumber: '',
+        discountRate: 0,
+        taxRate: 5,
+        validityDays: 30,
         customerName: 'Kamlesh Bhai',
         customerAddr: 'ERU CHAR RASTA',
         invoiceDate: new Date().toISOString().slice(0, 10),
@@ -20,7 +26,7 @@ window.billConfig = {
         maxRows: 15
     },
     labels: {
-        grandTotal: 'Grand total-A',
+        grandTotal: 'Grand Total',
         amountInWordsPrefix: 'Amount in words:'
     }
 };

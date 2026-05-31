@@ -25,104 +25,145 @@ window.billHelpers = {
         return str.trim();
     },
 
-    createInvoicePdf(app) {
+    createDocumentPdf(app) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF('p', 'mm', 'a4');
+        const margin = 12;
+        const pageWidth = 210;
+        const rightEdge = pageWidth - margin;
 
         doc.setFont('helvetica', 'bold');
-        doc.setFontSize(24);
-        doc.text(app.brand.name || 'New Jay Bhavani Furniture', 15, 25);
+        doc.setFontSize(16);
+        doc.text(app.brand.name || 'New Jay Bhavani Furniture', margin, 15);
+
+        doc.setFontSize(10);
+        doc.text(app.documentTitle, rightEdge, 13, { align: 'right' });
+        doc.setFont(undefined, 'normal');
+        doc.setFontSize(8);
+        doc.text(app.documentNumberLabel + ': ' + (app.displayDocumentNumber || app.autoDocumentNumber), rightEdge, 18, { align: 'right' });
 
         const img = document.getElementById('logoImg');
         if (img && img.naturalWidth > 0) {
             const ratio = img.naturalWidth / img.naturalHeight;
-            const w = 25;
+            const w = 24;
             const h = w / ratio;
-            doc.addImage(img, 'PNG', 195 - w, 12, w, h);
+            doc.addImage(img, 'PNG', rightEdge - w, 8, w, h);
         }
 
         doc.setFont('helvetica', 'normal');
-        doc.setFontSize(10);
+        doc.setFontSize(8);
         doc.setTextColor(100);
         const infoLines = [...(app.brand.addressLines || [])];
         if (app.brand.contactLine) infoLines.push(app.brand.contactLine);
-        doc.text(infoLines, 15, 32);
+        doc.text(infoLines, margin, 23);
 
-        doc.setDrawColor(30);
-        doc.setLineWidth(0.5);
-        doc.line(15, 48, 195, 48);
+        const headerBottom = 35;
+        doc.setDrawColor(220);
+        doc.setLineWidth(0.3);
+        doc.line(margin, headerBottom, rightEdge, headerBottom);
 
         doc.setTextColor(0);
-        doc.setFontSize(11);
-        doc.text('To,', 15, 58);
+        doc.setFontSize(9);
         doc.setFont(undefined, 'bold');
-        doc.text('Date', 165, 58);
+        doc.text('To:', margin, headerBottom + 6);
         doc.setFont(undefined, 'normal');
-        doc.text(this.formatDate(app.invoiceDate), 195, 58, { align: 'right' });
-
-        doc.setFontSize(14);
-        doc.setFont(undefined, 'bold');
-        doc.text(app.customerName.toUpperCase(), 15, 66);
-
-        doc.setFontSize(10);
-        doc.setFont(undefined, 'normal');
+        doc.text(app.customerName.toUpperCase(), margin, headerBottom + 11);
+        doc.setFontSize(8);
         doc.setTextColor(80);
-        doc.text(app.customerAddr.toUpperCase(), 15, 72);
+        doc.text(app.customerAddr.toUpperCase(), margin, headerBottom + 15);
 
-        const rows = app.visibleItems.map((item, index) => {
-            const qty = Number(item.qty) || 0;
-            const rate = Number(item.rate) || 0;
-            const total = qty * rate;
-            return [
-                index + 1,
-                item.desc || '',
-                qty || '',
-                rate > 0 ? rate.toLocaleString('en-IN') : '',
-                total > 0 ? total.toLocaleString('en-IN') : ''
-            ];
-        });
+        doc.setTextColor(0);
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
+        doc.text('Date: ' + this.formatDate(app.invoiceDate), rightEdge, headerBottom + 6, { align: 'right' });
+        if (app.documentType === 'Quotation' && app.validityDays) {
+            doc.text('Valid until: ' + this.formatDate(app.validUntilDate), rightEdge, headerBottom + 11, { align: 'right' });
+        }
+
+        const rows = app.items
+            .filter(item => item.desc || item.qty > 0 || item.rate > 0)
+            .map((item, index) => {
+                const qty = Number(item.qty) || 0;
+                const rate = Number(item.rate) || 0;
+                const total = qty * rate;
+                return [
+                    index + 1,
+                    item.desc || '',
+                    qty || '',
+                    rate > 0 ? rate.toLocaleString('en-IN') : '',
+                    total > 0 ? total.toLocaleString('en-IN') : ''
+                ];
+            });
 
         doc.autoTable({
-            startY: 82,
+            startY: headerBottom + 22,
             head: [['Sr', 'Description', 'Qty', 'Rate', 'Total']],
             body: rows,
             theme: 'grid',
-            headStyles: { fillColor: [245, 247, 250], textColor: [30, 41, 59], fontStyle: 'bold', lineWidth: 0.1, lineColor: [200, 200, 200] },
-            styles: { fontSize: 10, cellPadding: 3, lineColor: [210, 215, 220], lineWidth: 0.1, textColor: [0, 0, 0] },
+            headStyles: { fillColor: [245, 247, 250], textColor: [30, 41, 59], fontStyle: 'bold', lineWidth: 0.1, lineColor: [210, 210, 210], fontSize: 8, cellPadding: 2 },
+            styles: { fontSize: 8, cellPadding: 2, lineColor: [220, 220, 220], lineWidth: 0.1, textColor: [0, 0, 0] },
             columnStyles: {
-                0: { halign: 'center', cellWidth: 12 },
-                1: { fontStyle: 'bold' },
-                2: { halign: 'center', cellWidth: 15 },
-                3: { halign: 'right', cellWidth: 25 },
-                4: { halign: 'right', cellWidth: 35, fontStyle: 'bold' }
+                0: { halign: 'center', cellWidth: 10 },
+                1: { fontStyle: 'bold', cellWidth: 72 },
+                2: { halign: 'center', cellWidth: 16 },
+                3: { halign: 'right', cellWidth: 28 },
+                4: { halign: 'right', cellWidth: 28, fontStyle: 'bold' }
             }
         });
 
-        const finalY = doc.lastAutoTable.finalY + 12;
-        doc.setDrawColor(0);
-        doc.setLineWidth(0.8);
-        doc.line(15, finalY - 6, 195, finalY - 6);
+        const summaryStart = doc.lastAutoTable.finalY + 8;
+        const summaryLeft = 135;
+        const summaryRight = rightEdge;
+        const subTotal = app.items.reduce((sum, item) => {
+            const qty = Number(item.qty) || 0;
+            const rate = Number(item.rate) || 0;
+            return sum + qty * rate;
+        }, 0);
+        const discountAmount = subTotal * (Number(app.discountRate) || 0) / 100;
+        const taxAmount = subTotal * (Number(app.taxRate) || 0) / 100;
+        const totalAmount = subTotal + taxAmount - discountAmount;
 
-        doc.setFontSize(12);
-        doc.setFont(undefined, 'bold');
+        doc.setFontSize(8);
+        doc.setFont(undefined, 'normal');
         doc.setTextColor(100);
-        doc.text(app.labels.grandTotal || 'Grand total-A', 140, finalY);
+        doc.text('Sub total', summaryLeft, summaryStart);
+        doc.text('Rs. ' + subTotal.toLocaleString('en-IN'), summaryRight, summaryStart, { align: 'right' });
 
-        doc.setFontSize(15);
+        let currentY = summaryStart + 4;
+        if (app.documentType === 'Invoice') {
+            doc.text(`Discount (${Number(app.discountRate) || 0}%)`, summaryLeft, currentY);
+            doc.text('- Rs. ' + discountAmount.toLocaleString('en-IN'), summaryRight, currentY, { align: 'right' });
+            currentY += 4;
+            doc.text(`Tax (${Number(app.taxRate) || 0}%)`, summaryLeft, currentY);
+            doc.text('Rs. ' + taxAmount.toLocaleString('en-IN'), summaryRight, currentY, { align: 'right' });
+            currentY += 4;
+        }
+
+        doc.setLineWidth(0.2);
+        doc.setDrawColor(200);
+        doc.line(summaryLeft, currentY, summaryRight, currentY);
+        currentY += 3;
+
+        doc.setFont(undefined, 'bold');
         doc.setTextColor(0);
-        doc.text('Rs. ' + app.grandTotal.toLocaleString('en-IN'), 195, finalY, { align: 'right' });
+        doc.setFontSize(10);
+        doc.text(app.documentType === 'Invoice' ? 'Amount due' : 'Estimated total', summaryLeft, currentY);
+        doc.text('Rs. ' + totalAmount.toLocaleString('en-IN'), summaryRight, currentY, { align: 'right' });
 
-        doc.setFontSize(9);
+        currentY += 7;
+        doc.setFontSize(7);
         doc.setFont(undefined, 'italic');
         doc.setTextColor(120);
-        doc.text(`${app.labels.amountInWordsPrefix || 'Amount in words:'} ${this.numberToWords(app.grandTotal)} Only`, 15, finalY + 12);
+        doc.text(`${app.labels.amountInWordsPrefix || 'Amount in words:'} ${this.numberToWords(totalAmount)} Only`, margin, currentY);
 
-        doc.setFontSize(10);
+        currentY += 12;
+        doc.setFontSize(8);
         doc.setFont(undefined, 'bold');
         doc.setTextColor(0);
-        doc.text(app.brand.pdfSignatureLeft || "Receiver's Signature", 15, finalY + 35);
-        doc.text(app.brand.pdfSignatureRight || 'For, New Jay Bhavani Furniture', 195, finalY + 35, { align: 'right' });
+        doc.text(app.brand.pdfSignatureLeft || "Receiver's Signature", margin, currentY);
+        doc.text(app.brand.pdfSignatureRight || 'For, New Jay Bhavani Furniture', summaryRight, currentY, { align: 'right' });
 
-        doc.save(`Bill_${app.customerName.replace(/\s+/g, '_')}.pdf`);
+        const slug = app.customerName.replace(/\s+/g, '_');
+        doc.save(`${app.documentType}_${slug}.pdf`);
     }
 };

@@ -2,24 +2,27 @@
 
 ## Project summary
 - Single-page static bill generator app.
-- Main source is `index.html`.
-- Uses Tailwind CSS via CDN and jsPDF/jsPDF AutoTable for PDF export.
+- Uses Tailwind CSS, Alpine.js, jsPDF, and jsPDF AutoTable via CDN.
 - No package manager, build step, or test framework present.
+- Deployable as a static Netlify site.
 
-## Key file
-- `index.html`: contains the full UI, styling, and JavaScript logic.
-  - The left panel is the bill editor.
-  - The right panel is the live preview.
-  - PDF export is implemented entirely in the inline `<script>`.
+## Project structure
+- `index.html`: entry point and HTML template.
+- `src/css/styles.css`: site styling and preview layout.
+- `src/js/config.js`: brand configuration, default form values, label text, and layout settings.
+- `src/js/utils.js`: shared formatting helpers and PDF generation logic.
+- `src/js/app.js`: Alpine.js application state and UI actions.
+- `src/assets/logo.png`: vendor logo asset.
 
 ## Development notes
 - Keep changes focused on plain HTML/CSS/JS.
-- Do not assume a Node.js/npm project unless new files are added that introduce one.
-- If splitting code, preserve the current behavior: live preview updates and PDF generation should continue to work.
-- The app is intended to run by opening `index.html` in a browser.
+- Preserve the static site model and CDN dependencies unless a new build system is explicitly added.
+- Maintain Alpine.js reactive data bindings for the editor and preview.
+- Keep `config.js` as the source of branding and default values.
+- Keep `utils.js` for reusable helpers, including date formatting and PDF export.
 
 ## How to validate changes
 - Open `index.html` in a browser.
-- Edit customer details and item rows.
-- Verify preview updates correctly.
+- Edit customer details, address, date, and item rows.
+- Verify the right-side preview updates automatically.
 - Click `GENERATE PDF BILL` and confirm the downloaded PDF matches the preview.
