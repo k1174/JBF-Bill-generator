@@ -8,79 +8,25 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f8fafc;
-            color: #1e293b;
-        }
-
-        /* Web Preview Styling */
-        .preview-paper {
-            width: 210mm;
-            min-height: 297mm;
-            background: white;
-            padding: 20mm;
-            margin: 0 auto;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
-        }
-
-        .excel-table {
-            width: 100%;
-            border-collapse: collapse;
-            border: 1px solid #e2e8f0;
-        }
-
-        .excel-table th {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            padding: 10px;
-            text-align: left;
-            font-size: 9pt;
-            color: #64748b;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-        }
-
-        .excel-table td {
-            border: 1px solid #e2e8f0;
-            padding: 8px 10px;
-            height: 35px;
-            font-size: 10pt;
-            vertical-align: middle;
-        }
-
-        @media (max-width: 768px) {
-            #preview-zoom {
-                transform: scale(0.42);
-                transform-origin: top center;
-                margin-bottom: -150%;
-            }
-        }
-
-        .nav-tab-active {
-            border-bottom: 3px solid #0f172a;
-            color: #0f172a;
-            font-weight: 700;
-        }
-    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.12.0/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="src/css/styles.css">
 </head>
 
-<body>
+<body x-data="billApp()">
 
     <!-- Mobile Navigation -->
     <nav class="sticky top-0 bg-white/90 backdrop-blur-md border-b z-50 flex lg:hidden">
-        <button onclick="switchTab('edit')" id="tab-edit"
-            class="flex-1 py-4 nav-tab-active uppercase text-[10px] tracking-widest">1. Edit Bill</button>
-        <button onclick="switchTab('preview')" id="tab-preview"
-            class="flex-1 py-4 text-slate-400 uppercase text-[10px] tracking-widest">2. Preview</button>
+        <button type="button" @click="activeTab = 'edit'" id="tab-edit"
+            :class="{ 'nav-tab-active': activeTab === 'edit' }"
+            class="flex-1 py-4 uppercase text-[10px] tracking-widest">1. Edit Bill</button>
+        <button type="button" @click="activeTab = 'preview'" id="tab-preview"
+            :class="{ 'nav-tab-active': activeTab === 'preview', 'text-slate-400': activeTab !== 'preview' }"
+            class="flex-1 py-4 uppercase text-[10px] tracking-widest">2. Preview</button>
     </nav>
 
     <div class="flex flex-col lg:flex-row min-h-screen">
         <!-- LEFT: EDITOR -->
-        <div id="view-edit" class="w-full lg:w-1/3 bg-white p-6 border-r shadow-inner overflow-y-auto max-h-screen">
+        <div id="view-edit" :class="{ 'hidden': activeTab !== 'edit' }" class="w-full lg:w-1/3 bg-white p-6 border-r shadow-inner overflow-y-auto max-h-screen">
             <h1 class="text-2xl font-extrabold text-slate-900 mb-8 tracking-tight italic">JBF <span
                     class="font-light not-italic text-slate-400">Gen</span></h1>
 
@@ -88,13 +34,12 @@
                 <!-- Customer Inputs -->
                 <div class="space-y-3">
                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Bill Details</label>
-                    <input type="text" id="inCustName" oninput="update()" placeholder="PARTY NAME"
-                        class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all font-semibold"
-                        value="SUMAN BHAI">
-                    <textarea id="inCustAddr" oninput="update()" placeholder="ADDRESS"
+                    <input type="text" id="inCustName" x-model="customerName" placeholder="PARTY NAME"
+                        class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all font-semibold">
+                    <textarea id="inCustAddr" x-model="customerAddr" placeholder="ADDRESS"
                         class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 transition-all"
-                        rows="2">ERU CHAR RASTA</textarea>
-                    <input type="date" id="inDate" oninput="update()"
+                        rows="2"></textarea>
+                    <input type="date" id="inDate" x-model="invoiceDate"
                         class="w-full bg-slate-50 border border-slate-200 p-3 rounded-xl outline-none focus:ring-2 focus:ring-slate-900 font-medium">
                 </div>
 
@@ -102,53 +47,53 @@
                 <div id="itemInputs" class="space-y-4">
                     <label class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Inventory List</label>
 
-                    <!-- Row Template -->
-                    <div class="item-row bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 relative group">
-                        <input type="text" placeholder="Description (e.g. Dining Table)"
-                            class="w-full bg-transparent border-b border-slate-300 pb-2 inDesc font-medium outline-none focus:border-slate-900"
-                            oninput="update()" value="Dining table">
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <span class="text-[9px] font-bold text-slate-400 uppercase">Qty</span>
-                                <input type="number" placeholder="0"
-                                    class="w-full bg-transparent border-b border-slate-300 inQty outline-none focus:border-slate-900"
-                                    oninput="update()" value="2">
-                            </div>
-                            <div>
-                                <span class="text-[9px] font-bold text-slate-400 uppercase">Rate (₹)</span>
-                                <input type="number" placeholder="0"
-                                    class="w-full bg-transparent border-b border-slate-300 inRate outline-none focus:border-slate-900"
-                                    oninput="update()" value="12000">
+                    <template x-for="(item, index) in items" :key="index">
+                        <div class="item-row bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 relative group">
+                            <button type="button" @click="removeItem(index)" class="absolute top-2 right-2 text-slate-300 hover:text-red-500">✕</button>
+                            <input type="text" x-model="item.desc" placeholder="Description (e.g. Dining Table)"
+                                class="w-full bg-transparent border-b border-slate-300 pb-2 inDesc font-medium outline-none focus:border-slate-900">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Qty</span>
+                                    <input type="number" x-model.number="item.qty" placeholder="0"
+                                        class="w-full bg-transparent border-b border-slate-300 inQty outline-none focus:border-slate-900">
+                                </div>
+                                <div>
+                                    <span class="text-[9px] font-bold text-slate-400 uppercase">Rate (₹)</span>
+                                    <input type="number" x-model.number="item.rate" placeholder="0"
+                                        class="w-full bg-transparent border-b border-slate-300 inRate outline-none focus:border-slate-900">
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </template>
                 </div>
 
-                <button onclick="addNewRow()"
+                <button type="button" @click="addItem()"
                     class="w-full py-3 border-2 border-dashed border-slate-200 rounded-2xl text-slate-400 font-bold hover:bg-slate-50 hover:text-slate-600 transition-all">+
                     Add Product</button>
 
-                <button onclick="downloadPDF()"
+                <button type="button" @click="downloadPDF()"
                     class="w-full bg-slate-900 text-white py-5 rounded-2xl font-bold shadow-xl shadow-slate-200 active:scale-95 transition-all">GENERATE
                     PDF BILL</button>
             </div>
         </div>
 
         <!-- RIGHT: PREVIEW -->
-        <div id="view-preview" class="hidden lg:block w-full lg:w-2/3 bg-slate-100 p-8 overflow-auto">
+        <div id="view-preview" :class="{ 'hidden': activeTab === 'edit' }" class="hidden lg:block w-full lg:w-2/3 bg-slate-100 p-8 overflow-auto">
             <div id="preview-zoom">
                 <div class="preview-paper text-slate-900 relative">
                     <!-- Header -->
                     <div class="flex justify-between items-start mb-6">
                         <div>
-                            <h2 class="text-3xl font-black tracking-tight mb-1">New Jay Bhavani Furniture</h2>
+                            <h2 class="text-3xl font-black tracking-tight mb-1" x-text="brand.name">New Jay Bhavani Furniture</h2>
                             <p class="text-xs text-slate-500 leading-relaxed max-w-sm">
-                                Shop no. 5, Sai complex, Sitaram nagar, Eru char rasta,<br>
-                                Abrama Road, Navsari - 396450<br>
-                                Contact : 98252 98696 | jbf01nvs@gmail.com
+                                <template x-for="line in brand.addressLines" :key="line">
+                                    <span x-text="line"></span><br>
+                                </template>
+                                <span x-text="brand.contactLine"></span>
                             </p>
                         </div>
-                        <img id="logoImg" src="logo.png" class="w-24 h-24 object-contain" alt="Logo">
+                        <img id="logoImg" :src="brand.logoPath" class="w-24 h-24 object-contain" alt="Logo">
                     </div>
                     <div class="h-1 bg-slate-900 w-full mb-8"></div>
 
@@ -156,12 +101,12 @@
                     <div class="flex justify-between mb-10">
                         <div class="space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Billed To</span>
-                            <div id="outName" class="text-xl font-bold tracking-tight">SUMAN BHAI</div>
-                            <div id="outAddr" class="text-sm text-slate-500 uppercase">ERU CHAR RASTA</div>
+                            <div id="outName" x-text="customerName.toUpperCase()" class="text-xl font-bold tracking-tight">SUMAN BHAI</div>
+                            <div id="outAddr" x-text="customerAddr.toUpperCase()" class="text-sm text-slate-500 uppercase">ERU CHAR RASTA</div>
                         </div>
                         <div class="text-right space-y-1">
                             <span class="text-[10px] font-bold uppercase text-slate-400">Date of Issue</span>
-                            <div id="outDate" class="text-lg font-bold">31/05/2026</div>
+                            <div id="outDate" x-text="formatDate(invoiceDate)" class="text-lg font-bold">31/05/2026</div>
                         </div>
                     </div>
 
@@ -176,199 +121,36 @@
                                 <th style="width: 20%; text-align: right;">Total</th>
                             </tr>
                         </thead>
-                        <tbody id="table-body">
-                            <!-- Items auto-filled -->
+                        <tbody>
+                            <template x-for="(item, index) in visibleItems" :key="index">
+                                <tr>
+                                    <td style="text-align: center; color: #cbd5e1;" x-text="index + 1"></td>
+                                    <td class="font-bold" x-text="item.desc"></td>
+                                    <td style="text-align: center;" x-text="item.qty || ''"></td>
+                                    <td style="text-align: right;" x-text="formatNumber(item.rate)"></td>
+                                    <td style="text-align: right; font-weight: 800;" x-text="formatNumber((item.qty || 0) * (item.rate || 0))"></td>
+                                </tr>
+                            </template>
                         </tbody>
                     </table>
 
                     <!-- Calculation Footer -->
                     <div class="flex justify-end pt-6 border-t-4 border-slate-900">
                         <div class="flex items-center gap-16">
-                            <span class="text-sm font-bold text-slate-400 uppercase tracking-widest">Grand
-                                total-A</span>
-                            <span class="text-3xl font-black" id="outTotal">Rs. 24,000</span>
+                            <span class="text-sm font-bold text-slate-400 uppercase tracking-widest" x-text="labels.grandTotal">Grand total-A</span>
+                            <span class="text-3xl font-black" id="outTotal" x-text="'Rs. ' + formatNumber(grandTotal)">Rs. 24,000</span>
                         </div>
                     </div>
 
-                    <div class="mt-8 text-xs italic text-slate-400" id="outWords">Amount in words: ...</div>
+                    <div class="mt-8 text-xs italic text-slate-400" id="outWords" x-text="amountInWords">Amount in words: ...</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        document.getElementById('inDate').valueAsDate = new Date();
-
-        function switchTab(tab) {
-            const ev = document.getElementById('view-edit');
-            const pv = document.getElementById('view-preview');
-            const te = document.getElementById('tab-edit');
-            const tp = document.getElementById('tab-preview');
-            if (tab === 'edit') {
-                ev.classList.remove('hidden'); pv.classList.add('hidden');
-                te.classList.add('nav-tab-active'); tp.classList.remove('nav-tab-active');
-            } else {
-                ev.classList.add('hidden'); pv.classList.remove('hidden');
-                tp.classList.add('nav-tab-active'); te.classList.remove('nav-tab-active');
-                update();
-            }
-        }
-
-        function addNewRow() {
-            const div = document.createElement('div');
-            div.className = 'item-row bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 relative';
-            div.innerHTML = `
-                <button onclick="this.parentElement.remove(); update()" class="absolute top-2 right-2 text-slate-300 hover:text-red-500">✕</button>
-                <input type="text" placeholder="Description" class="w-full bg-transparent border-b border-slate-300 pb-2 inDesc font-medium outline-none focus:border-slate-900" oninput="update()">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase">Qty</span>
-                        <input type="number" placeholder="0" class="w-full bg-transparent border-b border-slate-300 inQty outline-none focus:border-slate-900" oninput="update()">
-                    </div>
-                    <div>
-                        <span class="text-[9px] font-bold text-slate-400 uppercase">Rate</span>
-                        <input type="number" placeholder="0" class="w-full bg-transparent border-b border-slate-300 inRate outline-none focus:border-slate-900" oninput="update()">
-                    </div>
-                </div>`;
-            document.getElementById('itemInputs').appendChild(div);
-        }
-
-        function update() {
-            document.getElementById('outName').innerText = document.getElementById('inCustName').value.toUpperCase();
-            document.getElementById('outAddr').innerText = document.getElementById('inCustAddr').value.toUpperCase();
-            document.getElementById('outDate').innerText = document.getElementById('inDate').value.split('-').reverse().join('/');
-
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = '';
-            let grandTotal = 0;
-
-            const items = document.querySelectorAll('.item-row');
-            for (let i = 0; i < 15; i++) {
-                const row = tbody.insertRow();
-                const it = items[i];
-                const d = it ? it.querySelector('.inDesc').value : "";
-                const q = it ? parseFloat(it.querySelector('.inQty').value) || 0 : 0;
-                const r = it ? parseFloat(it.querySelector('.inRate').value) || 0 : 0;
-                const t = q * r;
-                grandTotal += t;
-
-                row.innerHTML = `
-                    <td style="text-align: center; color: #cbd5e1;">${i + 1}</td>
-                    <td class="font-bold">${d}</td>
-                    <td style="text-align: center;">${q || ''}</td>
-                    <td style="text-align: right;">${r > 0 ? r.toLocaleString('en-IN') : ''}</td>
-                    <td style="text-align: right; font-weight: 800;">${t > 0 ? t.toLocaleString('en-IN') : ''}</td>
-                `;
-            }
-
-            document.getElementById('outTotal').innerText = 'Rs. ' + grandTotal.toLocaleString('en-IN');
-            document.getElementById('outWords').innerText = "Amount in words: " + numberToWords(grandTotal) + " Only";
-        }
-
-        function numberToWords(num) {
-            const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
-            const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
-            if (num == 0) return 'Zero';
-            if ((num = num.toString()).length > 9) return 'Overflow';
-            let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-            if (!n) return '';
-            let str = '';
-            str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
-            str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
-            str += (n[3] != 0) ? (a[Number(n[3])] || b[n[3][0]] + ' ' + a[n[3][1]]) + 'Thousand ' : '';
-            str += (n[4] != 0) ? (a[Number(n[4])] || b[n[4][0]] + ' ' + a[n[4][1]]) + 'Hundred ' : '';
-            str += (n[5] != 0) ? (str != '' ? 'and ' : '') + (a[Number(n[5])] || b[n[5][0]] + ' ' + a[n[5][1]]) : '';
-            return str.trim();
-        }
-
-        async function downloadPDF() {
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF('p', 'mm', 'a4');
-
-            // 1. HEADER
-            doc.setFont("helvetica", "bold"); doc.setFontSize(24);
-            doc.text("New Jay Bhavani Furniture", 15, 25);
-
-            const img = document.getElementById('logoImg');
-            if (img && img.naturalWidth > 0) {
-                const ratio = img.naturalWidth / img.naturalHeight;
-                const w = 25; const h = w / ratio;
-                doc.addImage(img, 'PNG', 195 - w, 12, w, h);
-            }
-
-            doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(100);
-            doc.text(["Shop no. 5, Sai complex, Sitaram nagar, Eru char rasta,", "Abrama Road, Navsari - 396450", "Contact : 98252 98696 | jbf01nvs@gmail.com"], 15, 32);
-
-            doc.setDrawColor(30); doc.setLineWidth(0.5);
-            doc.line(15, 48, 195, 48);
-
-            // 2. PARTY INFO
-            doc.setTextColor(0); doc.setFontSize(11);
-            doc.text("To,", 15, 58);
-            doc.setFont(undefined, "bold"); doc.text("Date", 165, 58);
-            doc.setFont(undefined, "normal"); doc.text(document.getElementById('outDate').innerText, 195, 58, { align: 'right' });
-
-            doc.setFontSize(14); doc.setFont(undefined, "bold");
-            doc.text(document.getElementById('outName').innerText, 15, 66);
-            doc.setFontSize(10); doc.setFont(undefined, "normal"); doc.setTextColor(80);
-            doc.text(document.getElementById('outAddr').innerText, 15, 72);
-
-            // 3. TABLE WITH RATE COLUMN
-            const rows = [];
-            let grandTotal = 0;
-            const items = document.querySelectorAll('.item-row');
-            for (let i = 0; i < 15; i++) {
-                const it = items[i];
-                const d = it ? it.querySelector('.inDesc').value : "";
-                const q = it ? parseFloat(it.querySelector('.inQty').value) || 0 : 0;
-                const r = it ? parseFloat(it.querySelector('.inRate').value) || 0 : 0;
-                const t = q * r;
-                grandTotal += t;
-                rows.push([
-                    i + 1,
-                    d,
-                    q || "",
-                    r > 0 ? r.toLocaleString('en-IN') : "",
-                    t > 0 ? t.toLocaleString('en-IN') : ""
-                ]);
-            }
-
-            doc.autoTable({
-                startY: 82,
-                head: [['Sr', 'Description', 'Qty', 'Rate', 'Total']],
-                body: rows,
-                theme: 'grid',
-                headStyles: { fillColor: [245, 247, 250], textColor: [30, 41, 59], fontStyle: 'bold', lineWidth: 0.1, lineColor: [200, 200, 200] },
-                styles: { fontSize: 10, cellPadding: 3, lineColor: [210, 215, 220], lineWidth: 0.1, textColor: [0, 0, 0] },
-                columnStyles: {
-                    0: { halign: 'center', cellWidth: 12 },
-                    1: { fontStyle: 'bold' },
-                    2: { halign: 'center', cellWidth: 15 },
-                    3: { halign: 'right', cellWidth: 25 },
-                    4: { halign: 'right', cellWidth: 35, fontStyle: 'bold' }
-                }
-            });
-
-            // 4. FOOTER
-            const finalY = doc.lastAutoTable.finalY + 12;
-            doc.setDrawColor(0); doc.setLineWidth(0.8); doc.line(15, finalY - 6, 195, finalY - 6);
-
-            doc.setFontSize(12); doc.setFont(undefined, "bold"); doc.setTextColor(100);
-            doc.text("Grand total-A", 140, finalY);
-            doc.setFontSize(15); doc.setTextColor(0);
-            doc.text("Rs. " + grandTotal.toLocaleString('en-IN'), 195, finalY, { align: 'right' });
-
-            doc.setFontSize(9); doc.setFont(undefined, "italic"); doc.setTextColor(120);
-            doc.text("Amount in words: " + numberToWords(grandTotal) + " Only", 15, finalY + 12);
-
-            doc.setFontSize(10); doc.setFont(undefined, "bold"); doc.setTextColor(0);
-            doc.text("Receiver's Signature", 15, finalY + 35);
-            doc.text("For, New Jay Bhavani Furniture", 195, finalY + 35, { align: 'right' });
-
-            doc.save(`Bill_${document.getElementById('inCustName').value.replace(/\s+/g, '_')}.pdf`);
-        }
-        update();
-    </script>
+    <script src="src/js/config.js"></script>
+    <script src="src/js/utils.js"></script>
+    <script src="src/js/app.js"></script>
 </body>
 
 </html>
