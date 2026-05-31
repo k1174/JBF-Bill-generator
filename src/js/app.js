@@ -4,7 +4,6 @@ document.addEventListener('alpine:init', () => {
         const brand = config.brand || {};
         const defaults = config.defaults || {};
         const labels = config.labels || {};
-        const layout = config.layout || {};
 
         return {
             activeTab: 'edit',
@@ -21,7 +20,6 @@ document.addEventListener('alpine:init', () => {
             customerAddr: defaults.customerAddr || 'ERU CHAR RASTA',
             invoiceDate: defaults.invoiceDate || new Date().toISOString().slice(0, 10),
             items: [defaults.item || { desc: 'Dining table', qty: 2, rate: 12000 }],
-            maxRows: layout.maxRows || 15,
 
             get autoDocumentNumber() {
                 const prefix = this.documentNumberPrefix[this.documentType] || 'DOC';
@@ -73,14 +71,6 @@ document.addEventListener('alpine:init', () => {
                 return this.documentType === 'Quotation' ? 'Quoted To' : 'Billed To';
             },
 
-            get visibleItems() {
-                const rows = this.items.slice(0, this.maxRows);
-                while (rows.length < this.maxRows) {
-                    rows.push({ desc: '', qty: 0, rate: 0 });
-                }
-                return rows;
-            },
-
             get grandTotalLabel() {
                 return this.documentType === 'Quotation' ? 'Estimated Total' : 'Amount due';
             },
@@ -103,6 +93,16 @@ document.addEventListener('alpine:init', () => {
 
             removeItem(index) {
                 this.items.splice(index, 1);
+            },
+
+            duplicateItem(index) {
+                const source = this.items[index];
+                if (!source) return;
+                this.items.splice(index + 1, 0, {
+                    desc: source.desc,
+                    qty: source.qty,
+                    rate: source.rate
+                });
             },
 
             downloadPDF() {

@@ -24,9 +24,9 @@
             class="flex-1 py-4 uppercase text-[10px] tracking-widest">2. Preview</button>
     </nav>
 
-    <div class="flex flex-col lg:flex-row min-h-screen">
+    <div class="split-layout flex flex-col lg:flex-row lg:gap-2 h-screen overflow-hidden">
         <!-- LEFT: EDITOR -->
-        <div id="view-edit" :class="{ 'hidden': activeTab !== 'edit' }" class="w-full lg:w-1/3 bg-white p-6 border-r shadow-inner overflow-y-auto max-h-screen">
+        <div id="view-edit" :class="{ 'hidden': activeTab !== 'edit' }" class="split-pane split-pane-editor w-full lg:w-1/3 lg:min-w-[320px] lg:max-w-[420px] bg-white p-6 overflow-y-auto lg:rounded-lg lg:shadow-md">
             <h1 class="text-2xl font-extrabold text-slate-900 mb-8 tracking-tight italic">JBF <span
                     class="font-light not-italic text-slate-400">Gen</span></h1>
 
@@ -84,7 +84,12 @@
 
                     <template x-for="(item, index) in items" :key="index">
                         <div class="item-row bg-slate-50 p-4 rounded-2xl border border-slate-200 space-y-3 relative group">
-                            <button type="button" @click="removeItem(index)" class="absolute top-2 right-2 text-slate-300 hover:text-red-500">✕</button>
+                            <div class="absolute top-2 right-2 flex items-center gap-2">
+                                <button type="button" @click="duplicateItem(index)" title="Duplicate product"
+                                    class="text-[9px] font-bold uppercase tracking-wider text-slate-300 hover:text-slate-600">Dup</button>
+                                <button type="button" @click="removeItem(index)" title="Remove product"
+                                    class="text-slate-300 hover:text-red-500">✕</button>
+                            </div>
                             <input type="text" x-model="item.desc" placeholder="Description (e.g. Dining Table)"
                                 class="w-full bg-transparent border-b border-slate-300 pb-2 inDesc font-medium outline-none focus:border-slate-900">
                             <div class="grid grid-cols-2 gap-4">
@@ -114,105 +119,98 @@
         </div>
 
         <!-- RIGHT: PREVIEW -->
-        <div id="view-preview" :class="{ 'hidden': activeTab === 'edit' }" class="hidden lg:block w-full lg:w-2/3 bg-slate-100 p-8 overflow-auto">
+        <div id="view-preview" :class="{ 'hidden': activeTab === 'edit' }" class="split-pane split-pane-preview hidden lg:flex lg:flex-1 flex-col bg-slate-100 p-6 lg:p-8 overflow-y-auto min-h-0 lg:rounded-lg">
             <div id="preview-zoom">
-                <div class="preview-paper text-slate-900 relative">
+                <div class="preview-paper">
                     <!-- Header -->
-                    <div class="flex justify-between items-start mb-6">
+                    <div class="a4-header">
                         <div>
-                            <h2 class="text-3xl font-black tracking-tight mb-1" x-text="brand.name">New Jay Bhavani Furniture</h2>
-                            <p class="text-xs text-slate-500 leading-relaxed max-w-sm">
+                            <h2 class="a4-brand" x-text="brand.name">Jay Bhavani Furniture</h2>
+                            <p class="a4-meta">
                                 <template x-for="line in brand.addressLines" :key="line">
                                     <span x-text="line"></span><br>
                                 </template>
                                 <span x-text="brand.contactLine"></span>
                             </p>
                         </div>
-                        <img id="logoImg" :src="brand.logoPath" class="w-24 h-24 object-contain" alt="Logo">
+                        <img id="logoImg" :src="brand.logoPath" class="a4-logo" alt="Logo">
                     </div>
-                    <div class="flex justify-between items-center mb-5">
-                        <div class="text-sm uppercase tracking-[0.4em] font-black text-slate-900" x-text="documentTitle"></div>
-                        <div class="text-right space-y-1">
-                            <span class="text-[10px] font-bold uppercase text-slate-400" x-text="documentNumberLabel"></span>
-                            <div class="text-lg font-bold" x-text="displayDocumentNumber"></div>
+
+                    <div class="a4-doc-row">
+                        <div class="a4-doc-title" x-text="documentTitle"></div>
+                        <div class="a4-doc-number-block">
+                            <span class="a4-label" x-text="documentNumberLabel"></span>
+                            <div class="a4-doc-number" x-text="displayDocumentNumber"></div>
                         </div>
                     </div>
-                    <div class="h-1 bg-slate-900 w-full mb-8"></div>
+                    <div class="a4-rule"></div>
 
                     <!-- Meta -->
-                    <div class="flex justify-between mb-10">
-                        <div class="space-y-1">
-                            <span class="text-[10px] font-bold uppercase text-slate-400" x-text="customerLabel"></span>
-                            <div id="outName" x-text="customerName.toUpperCase()" class="text-xl font-bold tracking-tight">SUMAN BHAI</div>
-                            <div id="outAddr" x-text="customerAddr.toUpperCase()" class="text-sm text-slate-500 uppercase">ERU CHAR RASTA</div>
+                    <div class="a4-party-row">
+                        <div>
+                            <span class="a4-label" x-text="customerLabel"></span>
+                            <div id="outName" x-text="customerName.toUpperCase()" class="a4-party-name">SUMAN BHAI</div>
+                            <div id="outAddr" x-text="customerAddr.toUpperCase()" class="a4-party-addr">ERU CHAR RASTA</div>
                         </div>
-                        <div class="text-right space-y-1">
-                            <span class="text-[10px] font-bold uppercase text-slate-400">Date of Issue</span>
-                            <div id="outDate" x-text="formatDate(invoiceDate)" class="text-lg font-bold">31/05/2026</div>
+                        <div class="text-right">
+                            <span class="a4-label">Date of Issue</span>
+                            <div id="outDate" x-text="formatDate(invoiceDate)" class="a4-date-value">31/05/2026</div>
                         </div>
                     </div>
 
-                    <!-- Live Table Preview -->
-                    <table class="excel-table mb-8">
+                    <!-- Line items -->
+                    <table class="excel-table">
                         <thead>
                             <tr>
-                                <th style="width: 8%; text-align: center;">Sr</th>
-                                <th style="width: 47%;">Description</th>
+                                <th style="width: 7%; text-align: center;">Sr</th>
+                                <th style="width: 48%;">Description</th>
                                 <th style="width: 10%; text-align: center;">Qty</th>
                                 <th style="width: 15%; text-align: right;">Rate</th>
                                 <th style="width: 20%; text-align: right;">Total</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <template x-for="(item, index) in visibleItems" :key="index">
+                            <template x-for="(item, index) in items" :key="index">
                                 <tr>
-                                    <td style="text-align: center; color: #cbd5e1;" x-text="index + 1"></td>
-                                    <td class="font-bold" x-text="item.desc"></td>
-                                    <td style="text-align: center;" x-text="item.qty || ''"></td>
-                                    <td style="text-align: right;" x-text="formatNumber(item.rate)"></td>
-                                    <td style="text-align: right; font-weight: 800;" x-text="formatNumber((item.qty || 0) * (item.rate || 0))"></td>
+                                    <td class="col-sr" x-text="index + 1"></td>
+                                    <td class="col-desc" x-text="item.desc"></td>
+                                    <td class="col-qty" x-text="item.qty || ''"></td>
+                                    <td class="col-rate" x-text="formatNumber(item.rate)"></td>
+                                    <td class="col-total" x-text="formatNumber((item.qty || 0) * (item.rate || 0))"></td>
                                 </tr>
                             </template>
                         </tbody>
                     </table>
 
-                    <div class="mb-8 max-w-md">
-                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm">
-                            <div class="flex justify-between mb-3 text-sm text-slate-500">
-                                <span>Sub total</span>
-                                <span x-text="'Rs. ' + formatNumber(subTotal)">Rs. 0</span>
-                            </div>
-                            <template x-if="documentType === 'Invoice'">
-                                <div class="space-y-3 text-sm text-slate-500">
-                                    <div class="flex justify-between">
-                                        <span>Discount (<span x-text="discountRate || 0"></span>%)</span>
-                                        <span x-text="'- Rs. ' + formatNumber(discountAmount)">- Rs. 0</span>
-                                    </div>
-                                    <div class="flex justify-between">
-                                        <span>Tax (<span x-text="taxRate || 0"></span>%)</span>
-                                        <span x-text="'Rs. ' + formatNumber(taxAmount)">Rs. 0</span>
-                                    </div>
+                    <!-- Totals (matches PDF) -->
+                    <div class="a4-totals">
+                        <div class="a4-totals-row">
+                            <span>Sub total</span>
+                            <span x-text="'Rs. ' + formatNumber(subTotal)">Rs. 0</span>
+                        </div>
+                        <template x-if="documentType === 'Invoice'">
+                            <div>
+                                <div class="a4-totals-row">
+                                    <span>Discount (<span x-text="discountRate || 0"></span>%)</span>
+                                    <span x-text="'- Rs. ' + formatNumber(discountAmount)">- Rs. 0</span>
                                 </div>
-                            </template>
-                            <div class="flex justify-between items-center pt-4 border-t border-slate-200">
-                                <span class="text-sm font-bold uppercase tracking-widest" x-text="grandTotalLabel">Amount due</span>
-                                <span class="text-2xl font-black" x-text="'Rs. ' + formatNumber(totalAmount)">Rs. 0</span>
+                                <div class="a4-totals-row">
+                                    <span>Tax (<span x-text="taxRate || 0"></span>%)</span>
+                                    <span x-text="'Rs. ' + formatNumber(taxAmount)">Rs. 0</span>
+                                </div>
                             </div>
-                            <template x-if="documentType === 'Quotation'">
-                                <p class="mt-3 text-xs text-slate-500">Offer valid until <span x-text="formatDate(validUntilDate)">31/05/2026</span></p>
-                            </template>
+                        </template>
+                        <hr class="a4-totals-rule">
+                        <div class="a4-totals-grand">
+                            <span x-text="grandTotalLabel">Amount due</span>
+                            <span class="amount" x-text="'Rs. ' + formatNumber(totalAmount)">Rs. 0</span>
                         </div>
+                        <template x-if="documentType === 'Quotation'">
+                            <p class="a4-totals-row" style="margin-top: 4mm; margin-bottom: 0;">Offer valid until <span x-text="formatDate(validUntilDate)">31/05/2026</span></p>
+                        </template>
                     </div>
 
-                    <!-- Calculation Footer -->
-                    <div class="flex justify-end pt-6 border-t-4 border-slate-900">
-                        <div class="flex items-center gap-16">
-                            <span class="text-sm font-bold text-slate-400 uppercase tracking-widest" x-text="grandTotalLabel">Amount due</span>
-                            <span class="text-3xl font-black" id="outTotal" x-text="'Rs. ' + formatNumber(totalAmount)">Rs. 24,000</span>
-                        </div>
-                    </div>
-
-                    <div class="mt-8 text-xs italic text-slate-400" id="outWords" x-text="amountInWords">Amount in words: ...</div>
+                    <div class="a4-notes" id="outWords" x-text="amountInWords">Amount in words: ...</div>
                 </div>
             </div>
         </div>
