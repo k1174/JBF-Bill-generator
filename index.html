@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JBF Bill System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* A4 Preview Styling */
+        #bill-preview {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 15mm;
+            margin: auto;
+            background: white;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            color: #000;
+            font-size: 12pt;
+        }
+
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1.5px solid #000;
+        }
+
+        .excel-table th {
+            background-color: #e5e7eb;
+            border: 1px solid #000;
+            padding: 4px 8px;
+            font-weight: bold;
+            text-align: left;
+        }
+
+        .excel-table td {
+            border: 1px solid #000;
+            padding: 6px 8px;
+            height: 28px;
+        }
+
+        @media (max-width: 1024px) {
+            #preview-container {
+                transform: scale(0.5);
+                transform-origin: top center;
+            }
+
+            .preview-wrapper {
+                height: 600px;
+                overflow: auto;
+            }
+        }
+    </style>
+</head>
+
+<body class="p-0 m-0">
+
+    <div class="flex flex-col lg:flex-row min-h-screen">
+
+        <!-- LEFT: INPUT PANEL -->
+        <div class="w-full lg:w-1/3 bg-white p-6 shadow-xl z-10 border-r overflow-y-auto max-h-screen">
+            <h1 class="text-2xl font-bold text-gray-800 mb-6 border-b pb-2">Bill Generator</h1>
+
+            <div class="space-y-4">
+                <!-- Customer Details -->
+                <div class="bg-gray-50 p-4 rounded-lg">
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Customer Name</label>
+                    <input type="text" id="inCustName" oninput="updatePreview()" class="w-full border p-2 rounded mb-3"
+                        placeholder="RAAJMAHAL DEVELOPERS">
+
+                    <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Address</label>
+                    <textarea id="inCustAddr" oninput="updatePreview()" class="w-full border p-2 rounded" rows="2"
+                        placeholder="Dindoli, Surat"></textarea>
+
+                    <div class="mt-3">
+                        <label class="block text-xs font-bold text-gray-500 mb-1 uppercase">Date</label>
+                        <input type="date" id="inDate" oninput="updatePreview()" class="w-full border p-2 rounded">
+                    </div>
+                </div>
+
+                <!-- Items -->
+                <div id="itemInputs" class="space-y-2">
+                    <label class="block text-xs font-bold text-gray-500 uppercase">Items & Amounts</label>
+                    <div class="flex gap-2 item-row">
+                        <input type="text" placeholder="Description" class="flex-grow border p-2 rounded inDesc"
+                            oninput="updatePreview()" value="Meeting Table 12' x 6'">
+                        <input type="number" placeholder="Amt" class="w-24 border p-2 rounded inAmt"
+                            oninput="updatePreview()" value="65000">
+                    </div>
+                </div>
+
+                <button onclick="addNewInputRow()" class="text-blue-600 font-bold text-sm">+ ADD MORE ITEMS</button>
+
+                <div class="pt-6">
+                    <button onclick="downloadPDF()"
+                        class="w-full bg-green-600 text-white font-bold py-4 rounded-lg shadow-lg hover:bg-green-700 transition">
+                        DOWNLOAD PDF BILL
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: LIVE PREVIEW -->
+        <div class="w-full lg:w-2/3 bg-gray-200 p-4 lg:p-8 preview-wrapper">
+            <div class="mb-4 text-center text-gray-500 text-sm font-bold uppercase tracking-widest">Document Preview
+            </div>
+
+            <div id="preview-container">
+                <div id="bill-preview">
+                    <!-- Header -->
+                    <div class="flex justify-between items-start mb-10">
+                        <div>
+                            <h2 class="text-3xl font-bold tracking-tight" style="font-family: Arial;">New Jay Bhavani
+                                Furniture</h2>
+                            <div class="text-sm mt-1 leading-relaxed">
+                                Shop no. 5, Sai complex, Sitaram nagar, Eru char rasta,<br>
+                                Abrama Road, Navsari - 396450<br>
+                                Contact : 98252 98696 | jbf01nvs@gmail.com
+                            </div>
+                        </div>
+                        <!-- LOGO PLACEHOLDER -->
+                        <div class=" w-24 h-24 flex items-center justify-center">
+                            <img src="logo.png" class="w-full h-full object-contain">
+                        </div>
+                    </div>
+
+                    <div class="border-t border-black mb-6"></div>
+
+                    <!-- Client Info -->
+                    <div class="flex justify-between mb-8">
+                        <div class="w-2/3">
+                            <span class="font-bold">To,</span><br>
+                            <div id="outCustName" class="font-bold text-lg mt-1">RAAJMAHAL DEVELOPERS</div>
+                            <div id="outCustAddr" class="uppercase whitespace-pre-wrap">RAAJMAHAL MALL DINDOLI SURAT
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold">Date:</span> <span id="outDate">16/04/2026</span>
+                        </div>
+                    </div>
+
+                    <!-- Excel Style Table -->
+                    <table class="excel-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 10%;">Sr</th>
+                                <th style="width: 60%;">Description</th>
+                                <th style="width: 10%;">Qty</th>
+                                <th style="width: 20%; text-align: right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="outTableBody">
+                            <!-- Rows injected here -->
+                        </tbody>
+                    </table>
+
+                    <!-- Grand Total -->
+                    <div class="mt-8 flex justify-end">
+                        <div class="w-1/2 flex justify-between items-center border-b-2 border-black pb-2">
+                            <span class="text-lg">Grand total-A</span>
+                            <span class="text-2xl font-bold" id="outGrandTotal">₹65,000</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-20 border-t border-gray-300"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initial Setup
+        document.getElementById('inDate').valueAsDate = new Date();
+        updatePreview();
+
+        function addNewInputRow() {
+            const container = document.getElementById('itemInputs');
+            const div = document.createElement('div');
+            div.className = 'flex gap-2 item-row';
+            div.innerHTML = `
+            <input type="text" placeholder="Description" class="flex-grow border p-2 rounded inDesc" oninput="updatePreview()">
+            <input type="number" placeholder="Amt" class="w-24 border p-2 rounded inAmt" oninput="updatePreview()">
+            <button onclick="this.parentElement.remove(); updatePreview()" class="text-red-500 px-1">✕</button>
+        `;
+            container.appendChild(div);
+        }
+
+        function updatePreview() {
+            // Text updates
+            document.getElementById('outCustName').innerText = document.getElementById('inCustName').value.toUpperCase();
+            document.getElementById('outCustAddr').innerText = document.getElementById('inCustAddr').value.toUpperCase();
+
+            const rawDate = document.getElementById('inDate').value;
+            document.getElementById('outDate').innerText = rawDate.split('-').reverse().join('/');
+
+            // Table updates
+            const outTbody = document.getElementById('outTableBody');
+            outTbody.innerHTML = '';
+
+            let grandTotal = 0;
+            const descInputs = document.querySelectorAll('.inDesc');
+            const amtInputs = document.querySelectorAll('.inAmt');
+
+            // Add actual data
+            for (let i = 0; i < descInputs.length; i++) {
+                const row = outTbody.insertRow();
+                const val = parseFloat(amtInputs[i].value) || 0;
+                grandTotal += val;
+
+                row.innerHTML = `
+                <td class="text-center">${i + 1}</td>
+                <td>${descInputs[i].value}</td>
+                <td class="text-center"></td>
+                <td class="text-right">${val > 0 ? val.toLocaleString('en-IN') : ''}</td>
+            `;
+            }
+
+            // Add empty "Excel" rows to maintain look (Total 15 rows)
+            for (let i = descInputs.length; i < 15; i++) {
+                const row = outTbody.insertRow();
+                row.innerHTML = `<td class="text-center">${i + 1}</td><td></td><td></td><td></td>`;
+            }
+
+            document.getElementById('outGrandTotal').innerText = '₹' + grandTotal.toLocaleString('en-IN');
+        }
+
+        async function downloadPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Use autoTable to replicate the Excel grid exactly
+            const rows = [];
+            const descInputs = document.querySelectorAll('.inDesc');
+            const amtInputs = document.querySelectorAll('.inAmt');
+
+            let total = 0;
+            for (let i = 0; i < 15; i++) {
+                const d = descInputs[i]?.value || "";
+                const a = parseFloat(amtInputs[i]?.value) || 0;
+                total += a;
+                rows.push([i + 1, d, "", a > 0 ? a.toLocaleString('en-IN') : ""]);
+            }
+
+            // Header
+            doc.setFontSize(22); doc.setFont("helvetica", "bold");
+            doc.text("New Jay Bhavani Furniture", 15, 25);
+
+            // Logo Box
+            doc.setLineWidth(0.5);
+            doc.rect(170, 15, 25, 25);
+            doc.setFontSize(18); doc.text("JB", 182.5, 30, { align: 'center' });
+
+            doc.setFontSize(10); doc.setFont("helvetica", "normal");
+            doc.text(["Shop no. 5, Sai complex, Sitaram nagar, Eru char rasta,", "Abrama Road, Navsari - 396450", "Contact : 98252 98696 | jbf01nvs@gmail.com"], 15, 32);
+
+            doc.line(15, 48, 195, 48);
+
+            // To/Date
+            doc.setFont("helvetica", "bold"); doc.text("To,", 15, 58);
+            doc.text("Date", 160, 58);
+            doc.setFont("helvetica", "normal");
+            doc.text(document.getElementById('outDate').innerText, 195, 58, { align: 'right' });
+            doc.setFontSize(12); doc.setFont("helvetica", "bold");
+            doc.text(document.getElementById('outCustName').innerText, 15, 65);
+            doc.setFontSize(10); doc.setFont("helvetica", "normal");
+            doc.text(document.getElementById('outCustAddr').innerText, 15, 71);
+
+            // Table
+            doc.autoTable({
+                startY: 80,
+                head: [['Sr', 'Description', 'Qty', 'Total']],
+                body: rows,
+                theme: 'grid',
+                headStyles: { fillColor: [230, 230, 230], textColor: 0, lineWidth: 0.1, lineColor: 0 },
+                styles: { lineColor: 0, lineWidth: 0.1, font: "helvetica", textColor: 0 },
+                columnStyles: { 0: { halign: 'center' }, 2: { halign: 'center' }, 3: { halign: 'right' } }
+            });
+
+            // Total
+            const finalY = doc.lastAutoTable.finalY + 10;
+            doc.setFontSize(12); doc.text("Grand total-A", 140, finalY);
+            doc.setFont("helvetica", "bold");
+            doc.text("Rs. " + total.toLocaleString('en-IN'), 195, finalY, { align: 'right' });
+            doc.line(15, finalY + 5, 195, finalY + 5);
+
+            doc.addImage(imgData, 'png', 170, 15, 25, 25)
+
+            doc.save("Bill_JBF.pdf");
+        }
+    </script>
+</body>
+
+</html>
