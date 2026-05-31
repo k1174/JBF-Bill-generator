@@ -1,0 +1,252 @@
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    color: #1e293b;
+    overflow: hidden;
+}
+
+.split-layout {
+    background: #cbd5e1;
+    padding: 0.5rem;
+}
+
+.split-pane-editor {
+    z-index: 10;
+}
+
+.split-pane {
+    height: 100%;
+    min-height: 0;
+}
+
+@media (max-width: 1023px) {
+    body {
+        overflow: auto;
+    }
+
+    .split-layout {
+        height: auto;
+        min-height: 100vh;
+        overflow: visible;
+        padding: 0;
+        background: #f8fafc;
+        gap: 0;
+    }
+
+    .split-pane {
+        height: auto;
+        min-height: auto;
+    }
+}
+
+/* A4 preview — typography and spacing match config.js → billConfig.a4 */
+.preview-paper {
+    width: 210mm;
+    min-height: 297mm;
+    background: white;
+    padding: 15mm;
+    margin: 0 auto;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+    font-family: Helvetica, Arial, sans-serif;
+    font-size: 9pt;
+    line-height: 1.35;
+    color: #0f172a;
+}
+
+.a4-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 6mm;
+}
+
+.a4-brand {
+    font-size: 14pt;
+    font-weight: 700;
+    line-height: 1.2;
+    margin: 0 0 2mm;
+}
+
+.a4-meta {
+    font-size: 8pt;
+    color: #64748b;
+    line-height: 1.35;
+    margin: 0;
+}
+
+.a4-logo {
+    width: 18mm;
+    height: auto;
+    max-height: 18mm;
+    object-fit: contain;
+}
+
+.a4-doc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 6mm;
+}
+
+.a4-doc-title {
+    font-size: 10pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+.a4-doc-number-block {
+    text-align: right;
+}
+
+.a4-label {
+    display: block;
+    font-size: 8pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    margin-bottom: 1mm;
+}
+
+.a4-doc-number {
+    font-size: 11pt;
+    font-weight: 700;
+}
+
+.a4-rule {
+    height: 0.4mm;
+    background: #0f172a;
+    margin-bottom: 6mm;
+}
+
+.a4-party-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8mm;
+}
+
+.a4-party-name {
+    font-size: 10pt;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.a4-party-addr {
+    font-size: 9pt;
+    color: #64748b;
+    text-transform: uppercase;
+    margin-top: 1mm;
+}
+
+.a4-date-value {
+    font-size: 9pt;
+    font-weight: 700;
+}
+
+.excel-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid #e2e8f0;
+    margin-bottom: 6mm;
+}
+
+.excel-table th {
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    padding: 2mm;
+    text-align: left;
+    font-size: 8pt;
+    font-weight: 700;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.excel-table td {
+    border: 1px solid #e2e8f0;
+    padding: 2mm;
+    min-height: 6mm;
+    font-size: 9pt;
+    vertical-align: middle;
+}
+
+.excel-table td.col-sr {
+    text-align: center;
+    color: #cbd5e1;
+    width: 7%;
+}
+
+.excel-table td.col-desc {
+    font-weight: 700;
+    width: 48%;
+}
+
+.excel-table td.col-qty {
+    text-align: center;
+    width: 10%;
+}
+
+.excel-table td.col-rate,
+.excel-table td.col-total {
+    text-align: right;
+}
+
+.excel-table td.col-total {
+    font-weight: 700;
+    width: 20%;
+}
+
+.a4-totals {
+    margin-left: auto;
+    width: 70mm;
+    font-size: 9pt;
+    color: #64748b;
+    margin-bottom: 6mm;
+}
+
+.a4-totals-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4mm;
+}
+
+.a4-totals-rule {
+    border: none;
+    border-top: 0.3mm solid #0f172a;
+    margin: 4mm 0;
+}
+
+.a4-totals-grand {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.a4-totals-grand .amount {
+    font-size: 11pt;
+}
+
+.a4-notes {
+    font-size: 8pt;
+    font-style: italic;
+    color: #94a3b8;
+    margin-top: 6mm;
+}
+
+@media (max-width: 768px) {
+    #preview-zoom {
+        transform: scale(0.42);
+        transform-origin: top center;
+        margin-bottom: -150%;
+    }
+}
+
+.nav-tab-active {
+    border-bottom: 3px solid #0f172a;
+    color: #0f172a;
+    font-weight: 700;
+}
